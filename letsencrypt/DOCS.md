@@ -302,6 +302,26 @@ When you specify a custom ACME server, the *Dry Run* and *Issue test certificate
 
 </details>
 
+<details>
+  <summary>Custom DNS Resolvers for Split-Horizon DNS</summary>
+
+  If you're using a split-horizon DNS setup (where internal DNS servers return different results than external DNS servers), you may need to specify custom DNS resolvers for certificate validation. This is particularly useful when your internal DNS doesn't return the external SOA (Start of Authority) records.
+
+  The `dns_resolvers` option allows you to specify one or more DNS servers (with port) that will be used for DNS lookups during certificate validation:
+
+  ```yaml
+  dns_resolvers:
+    - '8.8.8.8:53'
+    - '1.1.1.1:53'
+    - '[2001:4860:4860::8888]:53'  # IPv6 addresses must be in brackets
+  ```
+
+  **Note:** This option only applies when using DNS challenge (`challenge: dns`). It has no effect on HTTP challenges. IPv6 addresses must be enclosed in square brackets.
+
+  **Common use case:** If you're requesting a certificate for an internally-used domain and your internal DNS (e.g., dnsmasq, Pi-hole) doesn't return the external authoritative nameservers, configure this option to use public DNS resolvers like Google DNS (8.8.8.8) or Cloudflare DNS (1.1.1.1).
+
+</details>
+
 ## Example Configurations
 
 **Important Note for UI Edit Mode:** These configuration examples are raw YAML configs.
@@ -387,6 +407,30 @@ Example using [Hetzner](https://go-acme.github.io/lego/dns/hetzner/) (equivalent
 - Each `lego_env` entry must be in `KEY=VALUE` format. Values containing `=` signs are supported (e.g., `KEY=val=ue`).
 - For providers that require credential files, place the file in the `/share/` folder and reference it as `/share/filename` in the environment variable.
 - The `propagation_seconds` setting generates a timeout variable based on the uppercased provider name (e.g., `HETZNER_PROPAGATION_TIMEOUT`). If your provider uses a different variable prefix, you can include the correct timeout variable directly in `lego_env` and omit `propagation_seconds`.
+
+</details>
+
+<details>
+  <summary>Split-Horizon DNS with custom resolvers</summary>
+
+If you're running internal DNS (like dnsmasq or Pi-hole) that provides different answers than public DNS, you may encounter issues when requesting certificates for domains that resolve differently internally vs externally. The `dns_resolvers` option allows you to specify public DNS servers to use for certificate validation:
+
+  ```yaml
+  email: your.email@example.com
+  domains:
+    - homeassistant.yourdomain.io
+  certfile: fullchain.pem
+  keyfile: privkey.pem
+  challenge: dns
+  dns:
+    provider: dns-cloudflare
+    cloudflare_api_token: your-api-token-here
+  dns_resolvers:
+    - '8.8.8.8:53'
+    - '1.1.1.1:53'
+  ```
+
+This configuration ensures that DNS lookups for finding the SOA (Start of Authority) and authoritative nameservers use the specified public DNS resolvers (Google DNS and Cloudflare DNS in this example), bypassing your internal DNS servers.
 
 </details>
 

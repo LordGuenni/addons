@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add `dns_resolvers` configuration option to support split-horizon DNS setups by allowing custom DNS servers for certificate validation
+
 ## 6.2.0
 
 - Update certbot-dns-multi to 4.32.0, adding several DNS providers (see [lego's changelog](https://github.com/go-acme/lego/blob/v4.32.0/CHANGELOG.md) for details).

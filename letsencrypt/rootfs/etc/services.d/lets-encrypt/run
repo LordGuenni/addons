@@ -546,6 +546,23 @@ if [ "${CHALLENGE}" == "dns" ]; then
         fi
         echo "${PROVIDER_ENV_PREFIX}_PROPAGATION_TIMEOUT=${PROPAGATION_SECONDS}" >> "${DNS_MULTI_CREDS}"
 
+        # Set custom DNS resolvers if configured (for split-horizon DNS setups)
+        if bashio::config.has_value 'dns_resolvers'; then
+            DNS_RESOLVERS_COUNT=$(bashio::config 'dns_resolvers | length')
+            if [ "${DNS_RESOLVERS_COUNT}" -gt 0 ]; then
+                DNS_RESOLVERS_LIST=""
+                for (( i=0; i < DNS_RESOLVERS_COUNT; i++ )); do
+                    resolver="$(bashio::config "dns_resolvers[${i}]")"
+                    if [ -n "${DNS_RESOLVERS_LIST}" ]; then
+                        DNS_RESOLVERS_LIST="${DNS_RESOLVERS_LIST},"
+                    fi
+                    DNS_RESOLVERS_LIST="${DNS_RESOLVERS_LIST}${resolver}"
+                done
+                bashio::log.info "Using custom DNS resolvers: ${DNS_RESOLVERS_LIST}"
+                echo "LEGO_RECURSIVE_NAMESERVERS=${DNS_RESOLVERS_LIST}" >> "${DNS_MULTI_CREDS}"
+            fi
+        fi
+
         ACME_ARGUMENTS+=("--authenticator" "dns-multi" "--dns-multi-credentials" "${DNS_MULTI_CREDS}" "--dns-multi-propagation-seconds" "${PROPAGATION_SECONDS}")
     fi
 else

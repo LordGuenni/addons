@@ -184,6 +184,8 @@ schema:
   elliptic_curve: list(secp256r1|secp384r1)?
   acme_server: url?
   acme_root_ca_cert: str?
+  dns_resolvers:
+    - match(^([a-zA-Z0-9.-]+|\[[0-9a-fA-F:]+\]):[0-9]+$)?
   verbose: bool?
   dry_run: bool?
   test_cert: bool?
