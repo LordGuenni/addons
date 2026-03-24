@@ -547,19 +547,22 @@ if [ "${CHALLENGE}" == "dns" ]; then
         echo "${PROVIDER_ENV_PREFIX}_PROPAGATION_TIMEOUT=${PROPAGATION_SECONDS}" >> "${DNS_MULTI_CREDS}"
 
         # Set custom DNS resolvers if configured (for split-horizon DNS setups)
+        # Lego reads from /etc/resolv.conf for recursive nameservers
         if bashio::config.has_value 'dns_resolvers'; then
             DNS_RESOLVERS_COUNT=$(bashio::config 'dns_resolvers | length')
             if [ "${DNS_RESOLVERS_COUNT}" -gt 0 ]; then
-                DNS_RESOLVERS_LIST=""
+                bashio::log.info "Configuring custom DNS resolvers for split-horizon DNS"
+                # Backup original resolv.conf
+                cp /etc/resolv.conf /etc/resolv.conf.backup
+                # Create new resolv.conf with custom nameservers
+                echo "# Custom DNS resolvers for Let's Encrypt (lego)" > /etc/resolv.conf
                 for (( i=0; i < DNS_RESOLVERS_COUNT; i++ )); do
                     resolver="$(bashio::config "dns_resolvers[${i}]")"
-                    if [ -n "${DNS_RESOLVERS_LIST}" ]; then
-                        DNS_RESOLVERS_LIST="${DNS_RESOLVERS_LIST},"
-                    fi
-                    DNS_RESOLVERS_LIST="${DNS_RESOLVERS_LIST}${resolver}"
+                    # Extract IP/hostname (remove port)
+                    resolver_ip="${resolver%:*}"
+                    bashio::log.info "Adding DNS resolver: ${resolver_ip}"
+                    echo "nameserver ${resolver_ip}" >> /etc/resolv.conf
                 done
-                bashio::log.info "Using custom DNS resolvers: ${DNS_RESOLVERS_LIST}"
-                echo "LEGO_RECURSIVE_NAMESERVERS=${DNS_RESOLVERS_LIST}" >> "${DNS_MULTI_CREDS}"
             fi
         fi
 
